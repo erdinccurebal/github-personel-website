@@ -13,7 +13,7 @@ defineProps<{
   <section>
     <div class="repos__header">
       <h2 class="repos__title">Pinned Repositories</h2>
-      <span class="repos__count">{{ totalRepos }}</span>
+      <span class="repos__count">{{ repos.length }}</span>
     </div>
     <div class="repos__grid">
       <RepoCard v-for="repo in repos" :key="repo.id" :repo="repo" :lang-colors="langColors" />
