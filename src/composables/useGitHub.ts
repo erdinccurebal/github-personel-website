@@ -1,6 +1,6 @@
 import { ref, onMounted } from 'vue'
 
-const GITHUB_USERNAME = 'erdinccurebal'
+const GITHUB_USERNAME = import.meta.env.VITE_GITHUB_USERNAME as string
 const LANG_COLORS_URL = 'https://raw.githubusercontent.com/ozh/github-colors/master/colors.json'
 
 export interface GitHubUser {
@@ -32,6 +32,7 @@ export interface GitHubRepo {
   topics: string[]
   homepage: string | null
   fork: boolean
+  created_at: string
   updated_at: string
 }
 
@@ -102,7 +103,9 @@ export function useGitHub() {
       }
 
       const allRepos: GitHubRepo[] = await reposRes.json()
-      repos.value = allRepos.filter((r) => !r.fork)
+      repos.value = allRepos
+        .filter((r) => !r.fork)
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Bilinmeyen hata'
     } finally {

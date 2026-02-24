@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref, onMounted, nextTick } from 'vue'
 import type { GitHubRepo } from '../composables/useGitHub'
 
 const props = defineProps<{
@@ -6,45 +7,98 @@ const props = defineProps<{
   langColors: Record<string, string>
 }>()
 
-function shortUrl(url: string): string {
+function formatDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })
+}
+
+function getDomain(url: string): string {
   try {
-    const u = new URL(url)
-    return u.hostname.replace('www.', '')
+    return new URL(url).hostname
   } catch {
-    return url.replace(/^https?:\/\//, '')
+    return url
   }
 }
 
-const maxTopics = 3
-const visibleTopics = props.repo.topics.slice(0, maxTopics)
-const extraCount = props.repo.topics.length - maxTopics
+const topicsRef = ref<HTMLElement | null>(null)
+const visibleTopics = ref(props.repo.topics)
+const extraCount = ref(0)
+const ready = ref(false)
+
+onMounted(async () => {
+  await nextTick()
+  const container = topicsRef.value
+  if (!container || props.repo.topics.length === 0) {
+    ready.value = true
+    return
+  }
+
+  const children = Array.from(container.children) as HTMLElement[]
+  const containerRight = container.getBoundingClientRect().right
+  let count = 0
+
+  for (const child of children) {
+    const right = child.getBoundingClientRect().right
+    if (right + 40 <= containerRight) {
+      count++
+    } else {
+      break
+    }
+  }
+
+  if (count > 0 && count < props.repo.topics.length) {
+    visibleTopics.value = props.repo.topics.slice(0, count)
+    extraCount.value = props.repo.topics.length - count
+  }
+
+  ready.value = true
+})
 </script>
 
 <template>
-  <div class="repo-card">
-    <div class="repo-card__body">
-      <a :href="repo.html_url" target="_blank" rel="noopener" class="repo-card__name">{{ repo.name }}</a>
-      <p class="repo-card__desc">{{ repo.description ?? '' }}</p>
+  <a :href="repo.html_url" target="_blank" rel="noopener" class="repo-card">
+    <!-- Header -->
+    <div class="repo-card__header">
+      <h3 class="repo-card__name">{{ repo.name }}</h3>
+      <span v-if="repo.stargazers_count" class="repo-card__stars">&#9733; {{ repo.stargazers_count }}</span>
+    </div>
 
-      <div v-if="repo.topics.length" class="repo-card__topics">
+    <!-- Content -->
+    <div class="repo-card__content">
+      <p v-if="repo.description" class="repo-card__desc">{{ repo.description }}</p>
+
+      <div v-if="repo.topics.length" ref="topicsRef" class="repo-card__topics" :style="{ visibility: ready ? 'visible' : 'hidden' }">
         <span v-for="topic in visibleTopics" :key="topic" class="repo-card__topic">{{ topic }}</span>
-        <span v-if="extraCount > 0" class="repo-card__topic repo-card__topic--more">+{{ extraCount }}</span>
+        <span v-if="extraCount > 0" class="repo-card__more">+{{ extraCount }}</span>
       </div>
     </div>
 
+    <!-- Footer -->
     <div class="repo-card__footer">
-      <div class="repo-card__meta">
-        <span v-if="repo.language" class="repo-card__lang">
-          <span class="repo-card__lang-dot" :style="{ background: langColors[repo.language] ?? '#8b949e' }"></span>
-          {{ repo.language }}
-        </span>
-        <span v-if="repo.stargazers_count">&#9733; {{ repo.stargazers_count }}</span>
-        <span v-if="repo.forks_count">&#9741; {{ repo.forks_count }}</span>
+      <div class="repo-card__left">
+        <a
+          v-if="repo.homepage"
+          :href="repo.homepage"
+          target="_blank"
+          rel="noopener"
+          class="repo-card__homepage"
+          @click.stop
+        >{{ getDomain(repo.homepage) }}</a>
+        <div class="repo-card__meta">
+          <span v-if="repo.language" class="repo-card__lang">
+            <span class="repo-card__dot" :style="{ background: langColors[repo.language] ?? '#8b949e' }"></span>
+            {{ repo.language }}
+          </span>
+          <span v-if="repo.forks_count">&#9741; {{ repo.forks_count }}</span>
+        </div>
       </div>
-      <a v-if="repo.homepage" :href="repo.homepage" target="_blank" rel="noopener" class="repo-card__homepage">
-        <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-        {{ shortUrl(repo.homepage) }}
-      </a>
+      <div class="repo-card__dates">
+        <span>Created {{ formatDate(repo.created_at) }}</span>
+        <span>Updated {{ formatDate(repo.updated_at) }}</span>
+      </div>
     </div>
-  </div>
+  </a>
 </template>

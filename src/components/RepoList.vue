@@ -12,7 +12,7 @@ defineProps<{
 <template>
   <section>
     <div class="repos__header">
-      <h2 class="repos__title">Pinned Repositories</h2>
+      <h2 class="repos__title">Repositories</h2>
       <span class="repos__count">{{ repos.length }}</span>
     </div>
     <div class="repos__grid">
