@@ -63,12 +63,20 @@ onMounted(async () => {
     <!-- Header -->
     <div class="repo-card__header">
       <h3 class="repo-card__name">{{ repo.name }}</h3>
-      <span v-if="repo.stargazers_count" class="repo-card__stars">&#9733; {{ repo.stargazers_count }}</span>
     </div>
 
     <!-- Content -->
     <div class="repo-card__content">
       <p v-if="repo.description" class="repo-card__desc">{{ repo.description }}</p>
+
+      <a
+        v-if="repo.homepage"
+        :href="repo.homepage"
+        target="_blank"
+        rel="noopener"
+        class="repo-card__homepage"
+        @click.stop
+      >{{ getDomain(repo.homepage) }}</a>
 
       <div v-if="repo.topics.length" ref="topicsRef" class="repo-card__topics" :style="{ visibility: ready ? 'visible' : 'hidden' }">
         <span v-for="topic in visibleTopics" :key="topic" class="repo-card__topic">{{ topic }}</span>
@@ -79,25 +87,17 @@ onMounted(async () => {
     <!-- Footer -->
     <div class="repo-card__footer">
       <div class="repo-card__left">
-        <a
-          v-if="repo.homepage"
-          :href="repo.homepage"
-          target="_blank"
-          rel="noopener"
-          class="repo-card__homepage"
-          @click.stop
-        >{{ getDomain(repo.homepage) }}</a>
         <div class="repo-card__meta">
           <span v-if="repo.language" class="repo-card__lang">
             <span class="repo-card__dot" :style="{ background: langColors[repo.language] ?? '#8b949e' }"></span>
             {{ repo.language }}
           </span>
+          <span v-if="repo.stargazers_count" class="repo-card__stars">&#9733; {{ repo.stargazers_count }}</span>
           <span v-if="repo.forks_count">&#9741; {{ repo.forks_count }}</span>
         </div>
       </div>
       <div class="repo-card__dates">
         <span>Created {{ formatDate(repo.created_at) }}</span>
-        <span>Updated {{ formatDate(repo.updated_at) }}</span>
       </div>
     </div>
   </a>
